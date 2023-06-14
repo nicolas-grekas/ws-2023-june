@@ -13,7 +13,7 @@ class SpamChecker
     public function __construct(
         private HttpClientInterface $client,
 
-        #[Autowire('5d43020ed766')]
+        #[Autowire(env: 'AKISMET_KEY')]
         string $akismetKey,
     ) {
         $this->endpoint = sprintf('https://%s.rest.akismet.com/1.1/comment-check', $akismetKey);
