@@ -7,10 +7,9 @@ use App\Entity\Conference;
 use App\Form\CommentType;
 use App\Repository\CommentRepository;
 use App\Repository\ConferenceRepository;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\Entity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
@@ -21,7 +20,12 @@ class ConferenceController extends AbstractController
     public function __construct(
         private ConferenceRepository $conferenceRepository,
         private EntityManagerInterface $entityManager,
-    ) {}
+
+        #[Autowire('%kernel.project_dir%/public/uploads/photos')]
+        private string $photoDir,
+    ) {
+        dump($photoDir);
+    }
 
     #[Route('/', name: 'homepage')]
     public function index(): Response
@@ -49,7 +53,7 @@ class ConferenceController extends AbstractController
 
             if ($photo = $form->get('photo')->getData()) {
                 $filename = bin2hex(random_bytes(6)).'.'.$photo->guessExtension();
-                $photo->move($this->getParameter('kernel.project_dir').'/public/uploads/photos', $filename);
+                $photo->move($this->photoDir, $filename);
                 $comment->setPhotoFilename($filename);
             }
 
