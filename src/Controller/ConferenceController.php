@@ -2,28 +2,51 @@
 
 namespace App\Controller;
 
+use App\Entity\Conference;
+use App\Repository\CommentRepository;
+use App\Repository\ConferenceRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Annotation\Route;
 
 class ConferenceController extends AbstractController
 {
-    #[Route('/hello/{name}', name: 'homepage')]
-    public function index(string $name = ''): Response
+    public function __construct(
+        private ConferenceRepository $conferenceRepository,
+    ) {}
+
+    #[Route('/', name: 'homepage')]
+    public function index(): Response
     {
-        $greet = '';
+        return $this->render('conference/index.html.twig', [
+            'conferences' => $this->conferenceRepository->findAll(),
+        ]);
+    }
 
-        if ($name) {
-            $greet = sprintf('<h1>Hello %s!</h1>', htmlspecialchars($name));
-        }
+    #[Route('/conference/{id}', name: 'conference')]
+    public function show(
+        Conference $conference,
+        #[MapQueryParameter(options: ['min_range' => 0])]
+        int $offset = 0,
+    ): Response
+    {
+        $paginator = $this->container->get(CommentRepository::class)->getCommentPaginator($conference, $offset);
 
-        return new Response(<<<EOHTML
-            <html>
-                <body>
-                    {$greet}
-                    <img src="/images/under-construction.gif" />
-                </body>
-            </html>
-        EOHTML);
+        return $this->render('conference/show.html.twig', [
+//            'conferences' => $this->conferenceRepository->findAll(),
+            'conference' => $conference,
+            'comments' => $paginator,
+            'previous' => $offset - CommentRepository::PAGINATOR_PER_PAGE,
+            'next' => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE),
+        ]);
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        $services = parent::getSubscribedServices();
+        $services[] = CommentRepository::class;
+
+        return $services;
     }
 }
